@@ -7,16 +7,33 @@ import { bindDownloads, bindForm, notify } from '../hooks/actions.js';
 import { formValues } from '../types/form.js';
 import { esc } from '../utils/html.js';
 
+function ticketTable(items) {
+  const columns = [
+    { key: 'ticket', label: '工单号' },
+    { key: 'day', label: '测量日' },
+    { key: 'wobble', label: '跳动（mm）' },
+    { label: '签认版本沿革（版本 → 工序 · 收到时间）', html: row => row.signoffs.length
+      ? row.signoffs.map(item => `<div>v${esc(item.version ?? '—')} ${esc(item.grade)} · ${esc(item.received_at ? item.received_at.replace('T', ' ') : '—')}</div>`).join('')
+      : '待排工，尚无签认' },
+    { label: '当前最新版本', html: row => row.latest_version ? `v${esc(row.latest_version)}` : '—' },
+  ];
+  return table(columns, items, '暂无观测。分析员可先导入 CSV 或登记样本。');
+}
+
 export async function observationPage(spec, user, route) {
   const offset = Math.max(0, Number.parseInt(route.id, 10) || 0);
-  const {total, items} = await get(`/observations?offset=${offset}&limit=20`);
   const writable = user.role !== Role.VIEWER;
-  return `${intro('数据台账', spec.source, `<span class="count">${total} <small>条${esc(spec.record_name)}</small></span>`)}
-    ${writable ? `<div class="tools"><details><summary>登记一条${esc(spec.record_name)}</summary><form id="record-form"><div class="form-grid">${spec.fields.map(field => fieldControl(field)).join('')}</div>${formError}<button class="primary">保存记录</button></form></details>
-    <details><summary>按模板导入 CSV</summary><form id="import-form"><p>使用 UTF-8 CSV，每次最多 500 条。重复行自动跳过。</p><button type="button" data-download="/observations/template">下载模板</button><label class="field"><span>CSV 文件</span><input type="file" name="file" accept=".csv,text/csv" required></label>${formError}<button class="primary">导入文件</button></form></details></div>` : ''}
-    <section class="panel"><div class="panel-heading"><h2>${esc(spec.record_name)}明细</h2>${writable ? '<a class="text-link" href="#analysis">发起分析 →</a>' : ''}</div>
+  const [{total, items}, tickets] = await Promise.all([
+    get(`/observations?offset=${offset}&limit=20`), get('/observations/tickets'),
+  ]);
+  return `${intro('数据台账', spec.source, `<span class="count">${tickets.total} <small>张${esc(spec.record_name)}</small></span>`)}
+    ${writable ? `<div class="tools"><details><summary>登记一条${esc(spec.record_name)}</summary><form id="record-form"><div class="form-grid">${spec.fields.map(field => fieldControl(field)).join('')}</div><p class="aside-note">同一工单再次签认时填写更大的「签认版本」与实际「签认收到时间」；补录可填历史时间，新旧一律按版本号判定。</p>${formError}<button class="primary">保存记录</button></form></details>
+    <details><summary>按模板导入 CSV</summary><form id="import-form"><p>使用 UTF-8 CSV，每次最多 500 条。同一工单每次签认各占一行并填版本号；完全重复行自动跳过。</p><button type="button" data-download="/observations/template">下载模板</button><label class="field"><span>CSV 文件</span><input type="file" name="file" accept=".csv,text/csv" required></label>${formError}<button class="primary">导入文件</button></form></details></div>` : ''}
+    <section class="panel"><div class="panel-heading"><h2>工单签认版本</h2>${writable ? '<a class="text-link" href="#analysis">发起分析 →</a>' : ''}</div>
+    ${ticketTable(tickets.items)}</section>
+    <section class="panel"><div class="panel-heading"><h2>${esc(spec.record_name)}原始记录</h2></div>
     ${table([{key:'id',label:'记录号'},...spec.fields], items.map(item => ({id:item.id,...item.data})), '暂无观测。分析员可先导入 CSV 或登记样本。')}
-    ${total ? `<div class="pagination"><span>第 ${offset + 1}–${Math.min(total,offset + 20)} 条</span>${offset > 0 ? `<a href="#observations/${Math.max(0, offset-20)}">上一页</a>` : ''}${offset+20 < total ? `<a href="#observations/${offset+20}">下一页</a>` : ''}</div>` : ''}</section>`;
+    ${total ? `<div class="pagination"><span>第 ${offset + 1}–${Math.min(total,offset + 20)} 条原始记录</span>${offset > 0 ? `<a href="#observations/${Math.max(0, offset-20)}">上一页</a>` : ''}${offset+20 < total ? `<a href="#observations/${offset+20}">下一页</a>` : ''}</div>` : ''}</section>`;
 }
 
 export function wireObservations(root, spec, refresh) {

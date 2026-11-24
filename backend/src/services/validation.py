@@ -1,5 +1,5 @@
 import math
-from datetime import date
+from datetime import date, datetime
 
 from src.services.errors import BusinessError
 
@@ -29,6 +29,9 @@ def validated(fields, supplied, *, defaults=False):
                     value = int(value)
             elif kind == 'date':
                 value = date.fromisoformat(str(value)).isoformat()
+            elif kind == 'datetime':
+                parsed = datetime.fromisoformat(str(value).strip())
+                value = parsed.replace(tzinfo=None).isoformat(timespec='seconds')
             elif kind == 'choice':
                 if value not in field['choices']:
                     raise ValueError

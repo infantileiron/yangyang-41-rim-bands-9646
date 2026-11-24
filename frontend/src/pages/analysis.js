@@ -19,7 +19,7 @@ export async function analysisPage(spec, user) {
   const runs = await get('/runs');
   return `${intro('分析任务', spec.algorithm)}<div class="split"><section class="panel"><div class="panel-heading"><h2>计算条件</h2></div>
     ${user.role === Role.ANALYST ? `<form id="run-form" class="panel-body"><label class="field"><span>分析名称</span><input name="title" required maxlength="120" value="${esc(spec.direction)}复核"></label><div class="form-grid">${spec.parameters.map(parameter => fieldControl(parameter,true)).join('')}</div>${formError}<button class="primary">提交计算</button></form>` : '<p class="panel-body">由业务分析员提交计算。此账号可查看当前角色有权访问的分析任务。</p>'}</section>
-    <aside class="method"><h2>计算口径</h2><p>${esc(spec.formula)}</p><p class="aside-note">提交时固化参与计算的观测清单，后续导入不会改变历史结果。</p></aside></div>
+    <aside class="method"><h2>计算口径</h2><p>${esc(spec.formula)}</p><p class="aside-note">提交时固化参与计算的观测清单和发起分析时刻：已排队分析重跑仍用同一批观测与同一截止时刻，样本和签认不会被后到补录替换；发起新分析才会纳入更正后的签认。</p></aside></div>
     <section class="panel"><div class="panel-heading"><h2>历史分析</h2></div>${runTable(runs, '还没有可查看的分析。提交计算后可在这里追踪。')}</section>`;
 }
 

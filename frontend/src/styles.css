@@ -56,7 +56,8 @@ summary { padding:10px 15px; font-weight:600; cursor:pointer; }
 .split > * { margin-bottom:20px; min-width:0; }
 .method { background:var(--wash); border-inline-start:3px solid var(--accent); padding:20px clamp(14px,2vw,24px); }
 .method p:last-child { margin-bottom:0; }
-.method .aside-note { font-size:.85rem; color:var(--quiet); border-top:1px solid var(--line); padding-top:8px; }
+.aside-note { font-size:.85rem; color:var(--quiet); }
+.method .aside-note { border-top:1px solid var(--line); padding-top:8px; }
 .form-grid { display:grid; align-items:start; grid-template-columns:repeat(auto-fit,minmax(min(100%, 220px),1fr)); gap:8px 13px; }
 .field { display:block; font-weight:600; margin-bottom:11px; }
 .field small { display:block; color:var(--quiet); font-size:.77rem; font-weight:400; line-height:1.45; padding-top:3px; }

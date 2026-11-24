@@ -40,6 +40,40 @@ def create(payload: dict, user=Depends(editor)):
         return observation_view(items[0])
 
 
+@router.get('/observations/tickets')
+def tickets(user=Depends(current_user)):
+    """按工单聚合测量单，展示每次签认版本及收到时间，最新版本按版本号判定。"""
+    with Session() as db:
+        items = db.scalars(select(Observation).order_by(Observation.id))
+        grouped = {}
+        order = []
+        for item in items:
+            payload = item.payload
+            name = payload['ticket']
+            bucket = grouped.get(name)
+            if bucket is None:
+                bucket = {'ticket': name, 'day': payload['day'], 'wobble': payload['wobble'],
+                          'pending': False, 'signoffs': []}
+                grouped[name] = bucket
+                order.append(name)
+            if payload.get('grade') == '待排工':
+                bucket['pending'] = True
+            else:
+                bucket['signoffs'].append({'version': payload.get('version'),
+                                           'grade': payload.get('grade'),
+                                           'received_at': payload.get('received_at')})
+        result = []
+        for name in order:
+            bucket = grouped[name]
+            signoffs = sorted(bucket['signoffs'],
+                              key=lambda row: (row['version'] is None, row['version']))
+            latest = signoffs[-1]['version'] if signoffs and signoffs[-1]['version'] is not None else None
+            result.append({'ticket': bucket['ticket'], 'day': bucket['day'], 'wobble': bucket['wobble'],
+                           'latest_version': latest, 'pending': bucket['pending'] and not signoffs,
+                           'signoffs': signoffs})
+        return {'total': len(result), 'items': result}
+
+
 @router.get('/observations/template')
 def template(user=Depends(current_user)):
     fields = SPEC['fields']

@@ -3,6 +3,7 @@ export const formValues = (form, fields) => {
   const data = new FormData(form);
   return Object.fromEntries(fields.flatMap(field => {
     const value = data.get(field.key);
-    return value === null || value === '' ? [] : [[field.key, field.type === 'number' || field.type === 'integer' ? Number(value) : value]];
+    return value === null || value === '' ? []
+      : [[field.key, field.type === 'number' || field.type === 'integer' ? Number(value) : value]];
   }));
 };

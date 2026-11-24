@@ -1,12 +1,12 @@
 # 塘环单车·回正轮圈工序分档
 
-用已签认的轮圈跳动和维修级别训练双阈值，再在后到批次验证，解释新单分档。
+用已签认的轮圈跳动和维修级别训练双阈值，再按测量日留出验证，解释新单分档。同一工单的各次签认全部保留，新旧按签认版本号判定（乱序补录同样适用）。
 
 ## 模拟场景
 
 [业务剧本](yangyang-business.md)记录团队、上游资料、计算口径和交接去向。业务模块包括回正台测量、三道工序阈值拟合、待排工单解释。
 
-观测以 CSV 导入或逐行登记。后台按提交时的观测快照运行 Python 算法；负责人签核后，使用方可查看结果、下载 CSV 或按计划接收报告。
+观测以 CSV 导入或逐行登记，同一工单每次签认各占一行（带签认版本与收到时间）。后台按提交时固化的观测快照与发起分析时刻运行 Python 算法；训练只用留出期开始前已收到的最新签认，留出工单按发起时刻前的最新签认计分，后到补录不影响已排队分析。负责人签核后，使用方可查看结果、下载 CSV 或按计划接收报告。
 
 ## 启动
 
@@ -41,5 +41,13 @@ docker compose exec -T backend python -m scripts.seed_demo
 在 `backend` 中可用 `pip install -r requirements.txt` 安装本地依赖，设置 `DATABASE_URL`、`REDIS_URL` 和可写 `ARTIFACT_ROOT` 后运行 `uvicorn src.main:app --port 8000`，计算进程运行 `python -m src.worker`。前端修改在 `frontend/src`，用 `docker compose up -d --build frontend` 通过 Nginx 检查同源代理。业务输入定义在 `backend/src/domain/spec.json`，算法在同目录的 `analysis.py`。角色、任务状态和签核状态在后端 `backend/src/constants/enums.py` 和前端 `frontend/src/constants/enums.js` 共同定义。数据库表在 `backend/src/models/workflow.py`。
 
 分发计划锁定特定已签核快照，按北京时间显示。收件箱可下载真实 CSV，当前收件组是本地交接标签。停机跨过多个周期时补送最早未投递的一期，然后追到下一个将来的周期。新快照需重新签核并建新计划。
+
+## 签认版本与点-in-time 回测
+
+- 测量单是只追加台账：同一工单的每次签认各占一行，`version` 为签认版本、`received_at` 为签认实际收到时间。新旧一律按版本号判定，与录入先后无关；同版本冲突和工单测量信息冲突会在入库时拦截。
+- 回测按工单合并签认记录，留出仍按测量日切分。训练只用留出期开始前已收到的最新签认；留出工单按发起分析时刻（`analysis_runs.anchor_at`）前的最新签认计分，发起之后才补录的更正不进入本次分析。
+- 新发起的分析纳入已收到的更正；已排队或已完成分析的重跑仍使用固化的观测清单和锚点时刻，样本与签认不被替换。
+- 结果明细逐单标注参与环节（拟合样本/留出计分/晚到签认·未入训练/留出暂不计分/待排建议）以及本次采用的签认版本与收到时间；数据台账的「工单签认版本」面板展示每张工单的完整签认沿革。
+- 后端域测试：`python3 -I tests/test_signoff_versions.py`（仅标准库）；服务层测试：`python3 -I tests/test_observation_conflicts.py`（需 SQLAlchemy）。
 
 许可证为 [MIT](LICENSE)。

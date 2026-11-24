@@ -19,11 +19,13 @@ def create_run(db, request, actor):
     sample_ids = list(db.scalars(select(Observation.id).order_by(Observation.id)))
     if not sample_ids:
         raise BusinessError('请先导入观测记录')
+    anchor = utc_now()
     item = AnalysisRun(title=request.title, owner=actor, parameters=parameters, observation_ids=sample_ids,
-                       last_observation_id=sample_ids[-1], sample_size=len(sample_ids))
+                       last_observation_id=sample_ids[-1], sample_size=len(sample_ids), anchor_at=anchor)
     db.add(item)
     db.flush()
-    db.add(AuditEvent(actor=actor, action='run.created', detail=f'分析 #{item.id}，固化 {item.sample_size} 条观测'))
+    db.add(AuditEvent(actor=actor, action='run.created',
+                      detail=f'分析 #{item.id}，固化 {item.sample_size} 条观测，截止 {anchor:%Y-%m-%d %H:%M}'))
     return item
 
 
@@ -64,7 +66,7 @@ def run_pending(db):
     try:
         sample = list(db.scalars(select(Observation.payload).where(Observation.id.in_(item.observation_ids))
                                  .order_by(Observation.id)))
-        result = analyze(sample, item.parameters)
+        result = analyze(sample, item.parameters, item.anchor_at)
         if not {'headline', 'summary', 'metrics', 'columns', 'rows'} <= set(result):
             raise RuntimeError('invalid result schema')
         json.dumps(result, allow_nan=False, ensure_ascii=False)
