@@ -1,0 +1,14 @@
+{
+  "slug": "yangyang-41-rim-bands",
+  "title": "塘环单车·回正轮圈工序分档",
+  "direction": "有序分类与时间留出",
+  "layout": "ledger",
+  "theme": "砖橙色辐条工卡",
+  "recipient": "轮组翻新排程班",
+  "work_modules": [
+    "回正台测量",
+    "三道工序阈值拟合",
+    "待排工单解释"
+  ],
+  "follow_latest": false
+}

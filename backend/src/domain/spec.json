@@ -1,0 +1,61 @@
+{
+  "organization": "塘环单车翻新中心（18 人）",
+  "tagline": "用已签认的轮圈跳动和维修级别训练双阈值，再在后到批次验证，解释新单分档。",
+  "source": "《回正台轮圈跳动_1101.csv》与返修工单签认",
+  "record_name": "回正测量单",
+  "algorithm": "带低估惩罚的三档阈值搜索",
+  "formula": "按日留出最晚若干签认日。在训练集遍历已观测的两个切点，预测为轻调、重调或复验，低估距乘用户设置后加总最小化。验证集仅用于报告费用和误档。",
+  "decision_prompt": "哪些轮圈进入重调或复验台，错派一档的代价是否可接受？",
+  "fields": [
+    {
+      "key": "ticket",
+      "label": "工单号",
+      "type": "text",
+      "example": "TH-P04"
+    },
+    {
+      "key": "day",
+      "label": "跳动测量日",
+      "type": "date",
+      "example": "2026-11-22"
+    },
+    {
+      "key": "wobble",
+      "label": "侧向总跳动（mm）",
+      "type": "number",
+      "example": 1.25,
+      "min": 0,
+      "max": 20
+    },
+    {
+      "key": "grade",
+      "label": "维修签认",
+      "type": "choice",
+      "example": "待排工",
+      "choices": [
+        "轻调",
+        "重调",
+        "复验",
+        "待排工"
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "key": "holdout",
+      "label": "留出签认日",
+      "type": "integer",
+      "min": 1,
+      "max": 12,
+      "default": 2
+    },
+    {
+      "key": "under_cost",
+      "label": "低估工序惩罚倍数",
+      "type": "number",
+      "min": 1,
+      "max": 20,
+      "default": 3
+    }
+  ]
+}
